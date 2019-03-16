@@ -30,8 +30,8 @@ class agent():
 
         # Noise process
         self.exploration_mu = 0
-        self.exploration_theta = 0.15
-        self.exploration_sigma = 0.2
+        self.exploration_theta = 0.08
+        self.exploration_sigma = 0.15
         self.noise = OUNoise(self.action_size, self.exploration_mu, self.exploration_theta, self.exploration_sigma)
 
         # Replay memory
@@ -40,8 +40,8 @@ class agent():
         self.memory = ReplayBuffer(self.buffer_size, self.batch_size)
 
         # Algorithm parameters
-        self.gamma = 0.60  # discount factor
-        self.tau = 0.1  # for soft update of target parameters
+        self.gamma = 0.95  # discount factor
+        self.tau = 0.001  # for soft update of target parameters
         
         # score parameter
         self.best_score = -np.inf
@@ -68,6 +68,11 @@ class agent():
             experiences = self.memory.sample()
             self.learn(experiences)
 
+        if done:
+            self.score = self.total_score / float(self.count) if self.count else 0.0
+            if self.score > self.best_score:
+                self.best_score = self.score
+
         # Roll over last state and action
         self.last_state = next_state
 
@@ -91,9 +96,7 @@ class agent():
         actions_next = self.actor_target.model.predict_on_batch(next_states)
         Q_targets_next = self.critic_target.model.predict_on_batch([next_states, actions_next])
 
-        self.score = self.total_score / float(self.count) if self.count else 0.0
-        if self.score > self.best_score:
-            self.best_score = self.score
+        
         
         # Compute Q targets for current states and train critic model (local)
         Q_targets = rewards + self.gamma * Q_targets_next * (1 - dones)
